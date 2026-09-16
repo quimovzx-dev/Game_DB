@@ -261,19 +261,49 @@
             ctx.shadowBlur = 0;
         }
 
-        async function endGame() {
+                async function endGame() {
             isGameOver = true;
             document.getElementById('game-over').style.display = 'block';
             document.getElementById('final-score').innerText = score;
 
-            // 1. Send the score to the Database
+            // 1. Send the score to the Database (lowercase 'game_stats' and columns)
             if (playerID !== "GUEST-123") {
                 const { error: insertError } = await supabase
-                    .from('Game_Stats')
-                    .insert([{ GDBP_NUMBER: playerID, Score: score }]);
+                    .from('game_stats')
+                    .insert([{ gdbp_number: playerID, score: score }]);
                     
                 if (insertError) console.error("Error saving score:", insertError);
             }
+
+            // 2. Fetch the Top 5 Scores for the Leaderboard
+            const listElement = document.getElementById('leaderboard-list');
+            listElement.innerHTML = "<li style='color:#00ff41;'>Loading secure data...</li>";
+            
+            // Notice: 'game_stats', 'score', and 'players(usr_name)' are lowercase!
+            const { data: topScores, error: fetchError } = await supabase
+                .from('game_stats')
+                .select('score, players(usr_name)')
+                .order('score', { ascending: false })
+                .limit(5);
+
+            if (fetchError) {
+                console.error("Error fetching leaderboard:", fetchError);
+                listElement.innerHTML = "<li style='color:red;'>Error loading leaderboard.</li>";
+                return;
+            }
+
+            // 3. Display the scores on the screen
+            listElement.innerHTML = ""; 
+
+            topScores.forEach(entry => {
+                const userName = entry.players ? entry.players.usr_name : "Unknown Hacker";
+                const li = document.createElement('li');
+                li.style.color = "#00ff41";
+                li.innerText = `${userName} ..... ${entry.score} Pts`;
+                listElement.appendChild(li);
+            });
+        }
+
 
             // 2. Fetch the Top 5 Scores for the Leaderboard
             const listElement = document.getElementById('leaderboard-list');
