@@ -162,10 +162,10 @@
                 statusMsg.innerText = `Access Granted. ID: ${gdbp_number}. Redirecting to Grid...`;
                 
                 setTimeout(() => {
-                    // Redirects the user to the game page (we will build this next)
-                    // window.location.href = "game.html"; 
-                    alert("This is where the browser redirects to game.html!");
-                }, 1500);
+    // This actually sends the player to the game page now!
+    window.location.href = "game.html"; 
+}, 1500);
+
 
             }, 1200);
         });
