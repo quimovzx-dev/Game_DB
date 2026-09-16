@@ -127,52 +127,57 @@
         </form>
         <div id="status-message"></div>
     </div>
-    <script>
+       <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            // 1. THIS IS THE MOST IMPORTANT LINE: It stops the page from refreshing immediately!
+            event.preventDefault(); 
+            
+            const statusMsg = document.getElementById('status-message');
+            statusMsg.style.color = "#00ff41";
+            statusMsg.innerText = "Authenticating Database...";
 
-    // Initialize Supabase (Put your actual URL and Key inside the quotes!)
-const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            try {
+                // 2. Initialize Supabase safely INSIDE the click event
+                const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
+                const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-document.getElementById('loginForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
+                const username = document.getElementById('usr_name').value;
+                const password = document.getElementById('passwd').value;
 
-    const username = document.getElementById('usr_name').value;
-    const password = document.getElementById('passwd').value;
-    const statusMsg = document.getElementById('status-message');
+                // 3. Generate ID and Insert Data
+                const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
 
-    statusMsg.style.color = "#00ff41";
-    statusMsg.innerText = "Authenticating Database...";
+                const { data, error } = await supabase
+                    .from('Players')
+                    .insert([{ GDBP_NUMBER: gdbp_number, USR_NAME: username, PASSWD: password }]);
 
-    // 1. Generate the unique GDBP_NUMBER
-    const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
+                if (error) {
+                    statusMsg.style.color = "#ff003c";
+                    statusMsg.innerText = "Database Error: " + error.message;
+                    return;
+                }
 
-    // 2. INSERT into Supabase Players Table
-    const { data, error } = await supabase
-        .from('Players')
-        .insert([
-            { GDBP_NUMBER: gdbp_number, USR_NAME: username, PASSWD: password }
-        ]);
+                // 4. Save to storage
+                localStorage.setItem("currentUserGDBP", gdbp_number);
+                localStorage.setItem("currentUserName", username);
 
-    if (error) {
-        statusMsg.style.color = "#ff003c";
-        statusMsg.innerText = "Database Error: " + error.message;
-        return;
-    }
+                statusMsg.style.color = "#00ff41";
+                statusMsg.innerText = `Data Inserted! ID: ${gdbp_number}. Redirecting...`;
+                
+                // 5. Force the redirect to the game safely
+                setTimeout(() => {
+                    window.location.assign("./game.html"); 
+                }, 1500);
 
-    // 3. Save ID to local storage so the game can use it
-    localStorage.setItem("currentUserGDBP", gdbp_number);
-    localStorage.setItem("currentUserName", username);
-
-    // 4. Success and Redirect
-    statusMsg.innerText = `Data Inserted! ID: ${gdbp_number}. Redirecting...`;
-    
-    setTimeout(() => {
-        window.location.href = "game.html"; 
-    }, 1500);
-});
+            } catch (err) {
+                // If ANYTHING crashes, it will print the exact error on your screen instead of refreshing!
+                statusMsg.style.color = "#ff003c";
+                statusMsg.innerText = "System Crash: " + err.message;
+            }
+        });
     </script>
-
+ 
 
 
 </body>
