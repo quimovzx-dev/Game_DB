@@ -288,13 +288,26 @@ document.getElementById('player-id').innerText = playerID;
         }
 
         async function endGame() {
-            isGameOver = true;
-            document.getElementById('game-over').style.display = 'block';
-            document.getElementById('final-score').innerText = score;
+    isGameOver = true;
+    document.getElementById('game-over').style.display = 'block';
+    document.getElementById('final-score').innerText = score;
 
-            // This is where we will write the code to send data to Supabase!
-            console.log("Saving to Database: ", { id: playerID, score: score });
+    // Send the score to the Supabase Database
+    if (playerID !== "GUEST-123") {
+        const { data, error } = await supabase
+            .from('Game_Stats')
+            .insert([
+                { GDBP_NUMBER: playerID, Score: score }
+            ]);
+            
+        if (error) {
+            console.error("Error saving score:", error);
+        } else {
+            console.log("Score saved successfully!");
         }
+    }
+}
+
 
         // Start the game loop
         update();
