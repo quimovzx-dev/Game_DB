@@ -127,51 +127,53 @@
         </form>
         <div id="status-message"></div>
     </div>
-
     <script>
-        // JavaScript: Handling the logic, generating GDBP_NUMBER, and database simulation
 
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            // Prevent the page from refreshing when the form is submitted
-            event.preventDefault();
+    // Initialize Supabase (Put your actual URL and Key inside the quotes!)
+const supabaseUrl = 'YOUR_URL_HERE';
+const supabaseKey = 'YOUR_KEY_HERE';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            // Get the values entered by the user
-            const username = document.getElementById('usr_name').value;
-            const password = document.getElementById('passwd').value;
-            const statusMsg = document.getElementById('status-message');
+document.getElementById('loginForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
 
-            statusMsg.style.color = "#00ff41";
-            statusMsg.innerText = "Authenticating... Please wait.";
+    const username = document.getElementById('usr_name').value;
+    const password = document.getElementById('passwd').value;
+    const statusMsg = document.getElementById('status-message');
 
-            // Simulate a slight delay to make it feel like a real database connection
-            setTimeout(() => {
-                
-                // 1. Generate the unique GDBP_NUMBER (Using a random 6-digit hex for now)
-                // In your final project, your database (like Supabase) might generate this automatically
-                const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
+    statusMsg.style.color = "#00ff41";
+    statusMsg.innerText = "Authenticating Database...";
 
-                // 2. Here is where you will eventually put the code to INSERT into your Database
-                console.log("DATABASE ENTRY:");
-                console.log("USR_NAME: " + username);
-                console.log("PASSWD: " + password);
-                console.log("PRIMARY KEY (GDBP_NUMBER): " + gdbp_number);
+    // 1. Generate the unique GDBP_NUMBER
+    const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
 
-                // 3. Save the GDBP_NUMBER to local storage so the game page can use it
-                localStorage.setItem("currentUserGDBP", gdbp_number);
-                localStorage.setItem("currentUserName", username);
+    // 2. INSERT into Supabase Players Table
+    const { data, error } = await supabase
+        .from('Players')
+        .insert([
+            { GDBP_NUMBER: gdbp_number, USR_NAME: username, PASSWD: password }
+        ]);
 
-                // 4. Success message and redirect to the game
-                statusMsg.innerText = `Access Granted. ID: ${gdbp_number}. Redirecting to Grid...`;
-                
-                setTimeout(() => {
-    // This actually sends the player to the game page now!
-    window.location.href = "game.html"; 
-}, 1500);
+    if (error) {
+        statusMsg.style.color = "#ff003c";
+        statusMsg.innerText = "Database Error: " + error.message;
+        return;
+    }
 
+    // 3. Save ID to local storage so the game can use it
+    localStorage.setItem("currentUserGDBP", gdbp_number);
+    localStorage.setItem("currentUserName", username);
 
-            }, 1200);
-        });
+    // 4. Success and Redirect
+    statusMsg.innerText = `Data Inserted! ID: ${gdbp_number}. Redirecting...`;
+    
+    setTimeout(() => {
+        window.location.href = "game.html"; 
+    }, 1500);
+});
     </script>
+
+
 
 </body>
 </html>
