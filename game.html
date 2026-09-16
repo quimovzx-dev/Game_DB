@@ -64,12 +64,19 @@
         <h2>SCORE: <span id="score">0</span></h2>
     </div>
 
-    <div id="game-over">
+        <div id="game-over">
         <h1>SYSTEM FAILURE</h1>
         <p>Final Score: <span id="final-score">0</span></p>
-        <p>Uploading to Database...</p>
+        
+        <!-- NEW: Leaderboard Section -->
+        <div id="leaderboard" style="margin-top: 20px; text-align: left; background: rgba(0,255,65,0.1); padding: 10px;">
+            <h3 style="color: #fff; margin-bottom: 10px;">> TOP 5 HACKERS</h3>
+            <ol id="leaderboard-list" style="padding-left: 20px; margin: 0;"></ol>
+        </div>
+
         <button onclick="location.reload()">REBOOT SYSTEM</button>
     </div>
+
 
     <canvas id="gameCanvas"></canvas>
 
