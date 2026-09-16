@@ -8,55 +8,17 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #050505;
-            overflow: hidden;
-            touch-action: none;
-            font-family: 'Courier New', Courier, monospace;
-            color: #00ff41;
-        }
-        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050505; overflow: hidden; touch-action: none; font-family: 'Courier New', Courier, monospace; color: #00ff41; }
         canvas { display: block; }
-        
-        #ui-layer {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            pointer-events: none;
-        }
-
-        #game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            display: none;
-            background: rgba(0, 20, 0, 0.9);
-            padding: 30px;
-            border: 2px solid #00ff41;
-        }
-
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #00ff41;
-            color: #000;
-            border: none;
-            font-weight: bold;
-            font-family: inherit;
-            cursor: pointer;
-        }
+        #ui-layer { position: absolute; top: 20px; left: 20px; pointer-events: none; }
+        #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; background: rgba(0, 20, 0, 0.9); padding: 30px; border: 2px solid #00ff41; z-index: 100;}
+        button { margin-top: 15px; padding: 10px 20px; background: #00ff41; color: #000; border: none; font-weight: bold; font-family: inherit; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
-        <h2>ID: <span id="player-id">GUEST</span></h2>
+        <h2>ID: <span id="player-id">LOADING...</span></h2>
         <h2>SCORE: <span id="score">0</span></h2>
     </div>
 
@@ -75,195 +37,201 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        // --- 1. DATABASE SETUP ---
-        const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        const playerID = localStorage.getItem("currentUserGDBP") || "GUEST-123";
-        document.getElementById('player-id').innerText = playerID;
-
-        // --- 2. GAME SETUP ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        // --- 3. INPUT CONTROLLER ---
-        const input = {
-            x: 0, y: 0, active: false,
-            keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false }
-        };
-
-        window.addEventListener('keydown', (e) => {
-            if(input.keys.hasOwnProperty(e.key)) {
-                input.keys[e.key] = true;
-                updateKeyboardInput();
-            }
-        });
-        window.addEventListener('keyup', (e) => {
-            if(input.keys.hasOwnProperty(e.key)) {
-                input.keys[e.key] = false;
-                updateKeyboardInput();
-            }
-        });
-
-        function updateKeyboardInput() {
-            input.x = 0; input.y = 0;
-            if(input.keys.w || input.keys.ArrowUp) input.y = -1;
-            if(input.keys.s || input.keys.ArrowDown) input.y = 1;
-            if(input.keys.a || input.keys.ArrowLeft) input.x = -1;
-            if(input.keys.d || input.keys.ArrowRight) input.x = 1;
-            
-            if(input.x !== 0 && input.y !== 0) { input.x *= 0.707; input.y *= 0.707; }
-            input.active = (input.x !== 0 || input.y !== 0);
-        }
-
-        let dragStartX = 0, dragStartY = 0;
-
-        function handleDragStart(x, y) {
-            dragStartX = x; dragStartY = y;
-            input.active = true;
-        }
-
-        function handleDragMove(x, y) {
-            if (!input.active) return;
-            let dx = x - dragStartX; let dy = y - dragStartY;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > 0) { input.x = dx / distance; input.y = dy / distance; }
-        }
-
-        function handleDragEnd() {
-            input.active = false; input.x = 0; input.y = 0;
-            updateKeyboardInput(); 
-        }
-
-        canvas.addEventListener('touchstart', (e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY));
-        canvas.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY));
-        canvas.addEventListener('touchend', handleDragEnd);
-
-        canvas.addEventListener('mousedown', (e) => handleDragStart(e.clientX, e.clientY));
-        canvas.addEventListener('mousemove', (e) => handleDragMove(e.clientX, e.clientY));
-        canvas.addEventListener('mouseup', handleDragEnd);
-
-        // --- 4. GAME OBJECTS ---
-        let score = 0;
-        let isGameOver = false;
-        
-        const player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: 5, color: '#00ff41' };
-        const enemies = [];
-        let frameCount = 0;
-
-        function spawnEnemy() {
-            let side = Math.floor(Math.random() * 4);
-            let ex, ey;
-            if(side === 0) { ex = Math.random() * canvas.width; ey = -30; } 
-            if(side === 1) { ex = canvas.width + 30; ey = Math.random() * canvas.height; } 
-            if(side === 2) { ex = Math.random() * canvas.width; ey = canvas.height + 30; } 
-            if(side === 3) { ex = -30; ey = Math.random() * canvas.height; } 
-            enemies.push({ x: ex, y: ey, size: 15, speed: 2, color: '#ff003c' });
-        }
-
-        // --- 5. GAME LOOP & DATABASE LOGIC ---
-        function update() {
-            if(isGameOver) return;
-            const timeScale = input.active ? 1.0 : 0.05;
-
-            player.x += input.x * player.speed;
-            player.y += input.y * player.speed;
-            
-            player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
-            player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
-
-            frameCount += timeScale;
-            if(frameCount > 60) { spawnEnemy(); frameCount = 0; }
-
-            for(let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i];
-                let dx = player.x - e.x; let dy = player.y - e.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
+        // Wrapping everything safely to prevent browser crashes!
+        window.onload = function() {
+            try {
+                // --- 1. DATABASE SETUP ---
+                const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
                 
-                e.x += (dx / dist) * e.speed * timeScale;
-                e.y += (dy / dist) * e.speed * timeScale;
+                // Renamed to 'dbClient' to stop the naming conflict!
+                const dbClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-                if(dist < player.size/2 + e.size/2) { endGame(); }
+                const playerID = localStorage.getItem("currentUserGDBP") || "GUEST-123";
+                document.getElementById('player-id').innerText = playerID;
 
-                if(input.active && dist < 100) {
-                    enemies.splice(i, 1);
-                    score += 10;
-                    document.getElementById('score').innerText = score;
+                // --- 2. GAME SETUP ---
+                const canvas = document.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                window.addEventListener('resize', () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+
+                // --- 3. INPUT CONTROLLER ---
+                const input = { x: 0, y: 0, active: false, keys: {} };
+
+                window.addEventListener('keydown', (e) => { input.keys[e.key] = true; updateKeyboardInput(); });
+                window.addEventListener('keyup', (e) => { input.keys[e.key] = false; updateKeyboardInput(); });
+
+                function updateKeyboardInput() {
+                    input.x = 0; input.y = 0;
+                    if(input.keys['w'] || input.keys['ArrowUp']) input.y = -1;
+                    if(input.keys['s'] || input.keys['ArrowDown']) input.y = 1;
+                    if(input.keys['a'] || input.keys['ArrowLeft']) input.x = -1;
+                    if(input.keys['d'] || input.keys['ArrowRight']) input.x = 1;
+                    
+                    if(input.x !== 0 && input.y !== 0) { input.x *= 0.707; input.y *= 0.707; }
+                    input.active = (input.x !== 0 || input.y !== 0);
                 }
+
+                let dragStartX = 0, dragStartY = 0;
+
+                function handleDragStart(x, y) {
+                    dragStartX = x; dragStartY = y;
+                    input.active = true;
+                }
+
+                function handleDragMove(x, y) {
+                    if (!input.active) return;
+                    let dx = x - dragStartX; let dy = y - dragStartY;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > 0) { input.x = dx / distance; input.y = dy / distance; }
+                }
+
+                function handleDragEnd() {
+                    input.active = false; input.x = 0; input.y = 0;
+                    updateKeyboardInput(); 
+                }
+
+                canvas.addEventListener('touchstart', (e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY));
+                canvas.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY));
+                canvas.addEventListener('touchend', handleDragEnd);
+
+                canvas.addEventListener('mousedown', (e) => handleDragStart(e.clientX, e.clientY));
+                canvas.addEventListener('mousemove', (e) => handleDragMove(e.clientX, e.clientY));
+                canvas.addEventListener('mouseup', handleDragEnd);
+
+                // --- 4. GAME OBJECTS ---
+                let score = 0;
+                let isGameOver = false;
+                
+                const player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: 5, color: '#00ff41' };
+                const enemies = [];
+                let frameCount = 0;
+
+                function spawnEnemy() {
+                    let side = Math.floor(Math.random() * 4);
+                    let ex, ey;
+                    if(side === 0) { ex = Math.random() * canvas.width; ey = -30; } 
+                    if(side === 1) { ex = canvas.width + 30; ey = Math.random() * canvas.height; } 
+                    if(side === 2) { ex = Math.random() * canvas.width; ey = canvas.height + 30; } 
+                    if(side === 3) { ex = -30; ey = Math.random() * canvas.height; } 
+                    enemies.push({ x: ex, y: ey, size: 15, speed: 2, color: '#ff003c' });
+                }
+
+                // --- 5. GAME LOOP & DATABASE LOGIC ---
+                function update() {
+                    if(isGameOver) return;
+                    const timeScale = input.active ? 1.0 : 0.05;
+
+                    player.x += input.x * player.speed;
+                    player.y += input.y * player.speed;
+                    
+                    player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+                    player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
+                    frameCount += timeScale;
+                    if(frameCount > 60) { spawnEnemy(); frameCount = 0; }
+
+                    for(let i = enemies.length - 1; i >= 0; i--) {
+                        let e = enemies[i];
+                        let dx = player.x - e.x; let dy = player.y - e.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        e.x += (dx / dist) * e.speed * timeScale;
+                        e.y += (dy / dist) * e.speed * timeScale;
+
+                        if(dist < player.size/2 + e.size/2) { endGame(); }
+
+                        if(input.active && dist < 100) {
+                            enemies.splice(i, 1);
+                            score += 10;
+                            document.getElementById('score').innerText = score;
+                        }
+                    }
+                    draw(timeScale);
+                    requestAnimationFrame(update);
+                }
+
+                function draw(timeScale) {
+                    ctx.fillStyle = timeScale === 1.0 ? 'rgba(5, 5, 5, 0.5)' : 'rgba(5, 5, 5, 0.1)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Add text to tell the user to touch the screen!
+                    if (!input.active) {
+                        ctx.fillStyle = "rgba(0, 255, 65, 0.6)";
+                        ctx.font = "20px Courier New";
+                        ctx.fillText("DRAG TO MOVE", canvas.width/2 - 70, 80);
+                    }
+
+                    if(input.active) {
+                        ctx.beginPath(); ctx.arc(player.x, player.y, 100, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)'; ctx.lineWidth = 2; ctx.stroke();
+                    }
+
+                    ctx.fillStyle = player.color;
+                    ctx.shadowBlur = 15; ctx.shadowColor = player.color;
+                    ctx.beginPath(); ctx.arc(player.x, player.y, player.size/2, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0; 
+
+                    enemies.forEach(e => {
+                        ctx.fillStyle = e.color;
+                        ctx.shadowBlur = 10; ctx.shadowColor = e.color;
+                        ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
+                    });
+                    ctx.shadowBlur = 0;
+                }
+
+                async function endGame() {
+                    isGameOver = true;
+                    document.getElementById('game-over').style.display = 'block';
+                    document.getElementById('final-score').innerText = score;
+
+                    if (playerID !== "GUEST-123") {
+                        const { error: insertError } = await dbClient
+                            .from('game_stats')
+                            .insert([{ gdbp_number: playerID, score: score }]);
+                        if (insertError) console.error("Error saving score:", insertError);
+                    }
+
+                    const listElement = document.getElementById('leaderboard-list');
+                    listElement.innerHTML = "<li style='color:#00ff41;'>Loading secure data...</li>";
+                    
+                    const { data: topScores, error: fetchError } = await dbClient
+                        .from('game_stats')
+                        .select('score, players(usr_name)')
+                        .order('score', { ascending: false })
+                        .limit(5);
+
+                    if (fetchError) {
+                        console.error("Error fetching leaderboard:", fetchError);
+                        listElement.innerHTML = "<li style='color:red;'>Error loading leaderboard.</li>";
+                        return;
+                    }
+
+                    listElement.innerHTML = ""; 
+                    topScores.forEach(entry => {
+                        const userName = entry.players ? entry.players.usr_name : "Unknown Hacker";
+                        const li = document.createElement('li');
+                        li.style.color = "#00ff41";
+                        li.innerText = `${userName} ..... ${entry.score} Pts`;
+                        listElement.appendChild(li);
+                    });
+                }
+
+                // Start Game
+                update();
+
+            } catch (err) {
+                // If it crashes, it will tell us exactly why!
+                alert("Critical Game Error: " + err.message);
             }
-            draw(timeScale);
-            requestAnimationFrame(update);
-        }
-
-        function draw(timeScale) {
-            ctx.fillStyle = timeScale === 1.0 ? 'rgba(5, 5, 5, 0.5)' : 'rgba(5, 5, 5, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if(input.active) {
-                ctx.beginPath(); ctx.arc(player.x, player.y, 100, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)'; ctx.lineWidth = 2; ctx.stroke();
-            }
-
-            ctx.fillStyle = player.color;
-            ctx.shadowBlur = 15; ctx.shadowColor = player.color;
-            ctx.beginPath(); ctx.arc(player.x, player.y, player.size/2, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowBlur = 0; 
-
-            enemies.forEach(e => {
-                ctx.fillStyle = e.color;
-                ctx.shadowBlur = 10; ctx.shadowColor = e.color;
-                ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
-            });
-            ctx.shadowBlur = 0;
-        }
-
-        async function endGame() {
-            isGameOver = true;
-            document.getElementById('game-over').style.display = 'block';
-            document.getElementById('final-score').innerText = score;
-
-            if (playerID !== "GUEST-123") {
-                const { error: insertError } = await supabase
-                    .from('game_stats')
-                    .insert([{ gdbp_number: playerID, score: score }]);
-                if (insertError) console.error("Error saving score:", insertError);
-            }
-
-            const listElement = document.getElementById('leaderboard-list');
-            listElement.innerHTML = "<li style='color:#00ff41;'>Loading secure data...</li>";
-            
-            const { data: topScores, error: fetchError } = await supabase
-                .from('game_stats')
-                .select('score, players(usr_name)')
-                .order('score', { ascending: false })
-                .limit(5);
-
-            if (fetchError) {
-                console.error("Error fetching leaderboard:", fetchError);
-                listElement.innerHTML = "<li style='color:red;'>Error loading leaderboard.</li>";
-                return;
-            }
-
-            listElement.innerHTML = ""; 
-            topScores.forEach(entry => {
-                const userName = entry.players ? entry.players.usr_name : "Unknown Hacker";
-                const li = document.createElement('li');
-                li.style.color = "#00ff41";
-                li.innerText = `${userName} ..... ${entry.score} Pts`;
-                listElement.appendChild(li);
-            });
-        }
-
-        update();
+        };
     </script>
 </body>
 </html>
