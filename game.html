@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This meta tag is crucial for mobile games: it disables zooming and scrolling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chrono-Breach</title>
     
-    <!-- Supabase Database Connection -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <style>
@@ -16,8 +14,8 @@
             width: 100%;
             height: 100%;
             background-color: #050505;
-            overflow: hidden; /* Prevents scrollbars */
-            touch-action: none; /* Prevents browser swipe gestures on mobile */
+            overflow: hidden;
+            touch-action: none;
             font-family: 'Courier New', Courier, monospace;
             color: #00ff41;
         }
@@ -30,7 +28,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            pointer-events: none; /* Lets touches pass through to the canvas */
+            pointer-events: none;
         }
 
         #game-over {
@@ -64,11 +62,11 @@
         <h2>SCORE: <span id="score">0</span></h2>
     </div>
 
-        <div id="game-over">
+    <div id="game-over">
         <h1>SYSTEM FAILURE</h1>
         <p>Final Score: <span id="final-score">0</span></p>
         
-        <!-- NEW: Leaderboard Section -->
+        <!-- Leaderboard Section -->
         <div id="leaderboard" style="margin-top: 20px; text-align: left; background: rgba(0,255,65,0.1); padding: 10px;">
             <h3 style="color: #fff; margin-bottom: 10px;">> TOP 5 HACKERS</h3>
             <ol id="leaderboard-list" style="padding-left: 20px; margin: 0;"></ol>
@@ -77,20 +75,15 @@
         <button onclick="location.reload()">REBOOT SYSTEM</button>
     </div>
 
-
     <canvas id="gameCanvas"></canvas>
 
     <script>
         // --- 1. DATABASE SETUP ---
-const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseUrl = 'https://dymotejowsjzmuysxkbl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5bW90ZWpvd3Nqem11eXN4a2JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NTAxNzAsImV4cCI6MjEwNTEyNjE3MH0.Uvisey08Z32yzmJ4hozSv77VmdS7-ysEEulx9GhIv3U';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-const playerID = localStorage.getItem("currentUserGDBP") || "GUEST-123";
-document.getElementById('player-id').innerText = playerID;
-
-        
-        // Retrieve ID from Login Page
+        // Retrieve ID from Login Page (Fixed duplicate declaration!)
         const playerID = localStorage.getItem("currentUserGDBP") || "GUEST-123";
         document.getElementById('player-id').innerText = playerID;
 
@@ -98,7 +91,6 @@ document.getElementById('player-id').innerText = playerID;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Make canvas full screen
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
@@ -115,7 +107,6 @@ document.getElementById('player-id').innerText = playerID;
             keys: { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false }
         };
 
-        // Keyboard Events (PC)
         window.addEventListener('keydown', (e) => {
             if(input.keys.hasOwnProperty(e.key)) {
                 input.keys[e.key] = true;
@@ -136,7 +127,6 @@ document.getElementById('player-id').innerText = playerID;
             if(input.keys.a || input.keys.ArrowLeft) input.x = -1;
             if(input.keys.d || input.keys.ArrowRight) input.x = 1;
             
-            // Normalize diagonal speed
             if(input.x !== 0 && input.y !== 0) {
                 input.x *= 0.707;
                 input.y *= 0.707;
@@ -144,7 +134,6 @@ document.getElementById('player-id').innerText = playerID;
             input.active = (input.x !== 0 || input.y !== 0);
         }
 
-        // Touch & Mouse Events (Mobile & PC Dragging)
         let dragStartX = 0;
         let dragStartY = 0;
 
@@ -160,7 +149,6 @@ document.getElementById('player-id').innerText = playerID;
             let dy = y - dragStartY;
             let distance = Math.sqrt(dx * dx + dy * dy);
             
-            // Create a virtual joystick feel
             if (distance > 0) {
                 input.x = dx / distance;
                 input.y = dy / distance;
@@ -171,15 +159,13 @@ document.getElementById('player-id').innerText = playerID;
             input.active = false;
             input.x = 0;
             input.y = 0;
-            updateKeyboardInput(); // Fallback in case keys are still pressed
+            updateKeyboardInput(); 
         }
 
-        // Mobile Touch Listeners
         canvas.addEventListener('touchstart', (e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY));
         canvas.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY));
         canvas.addEventListener('touchend', handleDragEnd);
 
-        // PC Mouse Listeners
         canvas.addEventListener('mousedown', (e) => handleDragStart(e.clientX, e.clientY));
         canvas.addEventListener('mousemove', (e) => handleDragMove(e.clientX, e.clientY));
         canvas.addEventListener('mouseup', handleDragEnd);
@@ -188,45 +174,33 @@ document.getElementById('player-id').innerText = playerID;
         let score = 0;
         let isGameOver = false;
         
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            size: 20,
-            speed: 5,
-            color: '#00ff41'
-        };
-
+        const player = { x: canvas.width / 2, y: canvas.height / 2, size: 20, speed: 5, color: '#00ff41' };
         const enemies = [];
         let frameCount = 0;
 
         function spawnEnemy() {
-            // Spawn outside the screen edges
             let side = Math.floor(Math.random() * 4);
             let ex, ey;
-            if(side === 0) { ex = Math.random() * canvas.width; ey = -30; } // Top
-            if(side === 1) { ex = canvas.width + 30; ey = Math.random() * canvas.height; } // Right
-            if(side === 2) { ex = Math.random() * canvas.width; ey = canvas.height + 30; } // Bottom
-            if(side === 3) { ex = -30; ey = Math.random() * canvas.height; } // Left
+            if(side === 0) { ex = Math.random() * canvas.width; ey = -30; } 
+            if(side === 1) { ex = canvas.width + 30; ey = Math.random() * canvas.height; } 
+            if(side === 2) { ex = Math.random() * canvas.width; ey = canvas.height + 30; } 
+            if(side === 3) { ex = -30; ey = Math.random() * canvas.height; } 
 
             enemies.push({ x: ex, y: ey, size: 15, speed: 2, color: '#ff003c' });
         }
 
-        // --- 5. THE MAIN GAME LOOP ---
+        // --- 5. MAIN GAME LOOP ---
         function update() {
             if(isGameOver) return;
 
-            // THE CHRONO-BREACH MECHANIC: Time scales based on player input
             const timeScale = input.active ? 1.0 : 0.05;
 
-            // Move Player
             player.x += input.x * player.speed;
             player.y += input.y * player.speed;
             
-            // Keep player on screen
             player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
             player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
 
-            // Manage Enemies
             frameCount += timeScale;
             if(frameCount > 60) {
                 spawnEnemy();
@@ -236,7 +210,6 @@ document.getElementById('player-id').innerText = playerID;
             for(let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
                 
-                // Enemies chase player, but respect the timeScale!
                 let dx = player.x - e.x;
                 let dy = player.y - e.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
@@ -244,12 +217,10 @@ document.getElementById('player-id').innerText = playerID;
                 e.x += (dx / dist) * e.speed * timeScale;
                 e.y += (dy / dist) * e.speed * timeScale;
 
-                // Collision detection (Game Over)
                 if(dist < player.size/2 + e.size/2) {
                     endGame();
                 }
 
-                // If time is moving (player moving), auto-destroy enemies close to player (Simulated shooting)
                 if(input.active && dist < 100) {
                     enemies.splice(i, 1);
                     score += 10;
@@ -262,11 +233,9 @@ document.getElementById('player-id').innerText = playerID;
         }
 
         function draw(timeScale) {
-            // If time is slow, draw a darker trail effect
             ctx.fillStyle = timeScale === 1.0 ? 'rgba(5, 5, 5, 0.5)' : 'rgba(5, 5, 5, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Auto-Aim Radius (Only visible when moving)
             if(input.active) {
                 ctx.beginPath();
                 ctx.arc(player.x, player.y, 100, 0, Math.PI * 2);
@@ -275,16 +244,14 @@ document.getElementById('player-id').innerText = playerID;
                 ctx.stroke();
             }
 
-            // Draw Player
             ctx.fillStyle = player.color;
             ctx.shadowBlur = 15;
             ctx.shadowColor = player.color;
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.size/2, 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
+            ctx.shadowBlur = 0; 
 
-            // Draw Enemies
             enemies.forEach(e => {
                 ctx.fillStyle = e.color;
                 ctx.shadowBlur = 10;
@@ -310,9 +277,8 @@ document.getElementById('player-id').innerText = playerID;
 
             // 2. Fetch the Top 5 Scores for the Leaderboard
             const listElement = document.getElementById('leaderboard-list');
-            listElement.innerHTML = "<li>Loading secure data...</li>";
+            listElement.innerHTML = "<li style='color:#00ff41;'>Loading secure data...</li>";
             
-            // This query uses the Foreign Key to get the Username and the Score!
             const { data: topScores, error: fetchError } = await supabase
                 .from('Game_Stats')
                 .select('Score, Players(USR_NAME)')
@@ -326,22 +292,18 @@ document.getElementById('player-id').innerText = playerID;
             }
 
             // 3. Display the scores on the screen
-            listElement.innerHTML = ""; // Clear loading message
+            listElement.innerHTML = ""; 
 
             topScores.forEach(entry => {
-                // Safely grab the username, or default to "Unknown" if there's an error
                 const userName = entry.Players ? entry.Players.USR_NAME : "Unknown Hacker";
                 const li = document.createElement('li');
+                li.style.color = "#00ff41";
                 li.innerText = `${userName} ..... ${entry.Score} Pts`;
                 listElement.appendChild(li);
             });
         }
 
-
-
-        // Start the game loop
         update();
-
     </script>
 </body>
 </html>
