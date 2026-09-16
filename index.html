@@ -145,18 +145,14 @@
                 const username = document.getElementById('usr_name').value;
                 const password = document.getElementById('passwd').value;
 
-                // 3. Generate ID and Insert Data
+                                // 3. Generate ID and Insert Data
                 const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
 
+                // Notice: 'players', 'gdbp_number', 'usr_name', 'passwd' are all lowercase now!
                 const { data, error } = await supabase
-                    .from('Players')
-                    .insert([{ GDBP_NUMBER: gdbp_number, USR_NAME: username, PASSWD: password }]);
+                    .from('players')
+                    .insert([{ gdbp_number: gdbp_number, usr_name: username, passwd: password }]);
 
-                if (error) {
-                    statusMsg.style.color = "#ff003c";
-                    statusMsg.innerText = "Database Error: " + error.message;
-                    return;
-                }
 
                 // 4. Save to storage
                 localStorage.setItem("currentUserGDBP", gdbp_number);
