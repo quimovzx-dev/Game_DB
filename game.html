@@ -295,25 +295,48 @@ document.getElementById('player-id').innerText = playerID;
         }
 
         async function endGame() {
-    isGameOver = true;
-    document.getElementById('game-over').style.display = 'block';
-    document.getElementById('final-score').innerText = score;
+            isGameOver = true;
+            document.getElementById('game-over').style.display = 'block';
+            document.getElementById('final-score').innerText = score;
 
-    // Send the score to the Supabase Database
-    if (playerID !== "GUEST-123") {
-        const { data, error } = await supabase
-            .from('Game_Stats')
-            .insert([
-                { GDBP_NUMBER: playerID, Score: score }
-            ]);
+            // 1. Send the score to the Database
+            if (playerID !== "GUEST-123") {
+                const { error: insertError } = await supabase
+                    .from('Game_Stats')
+                    .insert([{ GDBP_NUMBER: playerID, Score: score }]);
+                    
+                if (insertError) console.error("Error saving score:", insertError);
+            }
+
+            // 2. Fetch the Top 5 Scores for the Leaderboard
+            const listElement = document.getElementById('leaderboard-list');
+            listElement.innerHTML = "<li>Loading secure data...</li>";
             
-        if (error) {
-            console.error("Error saving score:", error);
-        } else {
-            console.log("Score saved successfully!");
+            // This query uses the Foreign Key to get the Username and the Score!
+            const { data: topScores, error: fetchError } = await supabase
+                .from('Game_Stats')
+                .select('Score, Players(USR_NAME)')
+                .order('Score', { ascending: false })
+                .limit(5);
+
+            if (fetchError) {
+                console.error("Error fetching leaderboard:", fetchError);
+                listElement.innerHTML = "<li style='color:red;'>Error loading leaderboard.</li>";
+                return;
+            }
+
+            // 3. Display the scores on the screen
+            listElement.innerHTML = ""; // Clear loading message
+
+            topScores.forEach(entry => {
+                // Safely grab the username, or default to "Unknown" if there's an error
+                const userName = entry.Players ? entry.Players.USR_NAME : "Unknown Hacker";
+                const li = document.createElement('li');
+                li.innerText = `${userName} ..... ${entry.Score} Pts`;
+                listElement.appendChild(li);
+            });
         }
-    }
-}
+
 
 
         // Start the game loop
