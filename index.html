@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM LOGIN - GRID PROTOCOL</title>
+    <style>
+        /* CSS: Styling for a hacker/cyberpunk terminal look */
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #050505;
+            color: #00ff41; /* Neon hacker green */
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .login-container {
+            border: 2px solid #00ff41;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            background: rgba(0, 25, 0, 0.8);
+            box-shadow: 0 0 15px #00ff41, inset 0 0 15px #00ff41;
+            position: relative;
+        }
+
+        .login-container::before {
+            content: "SECURE CONNECTION ESTABLISHED";
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #050505;
+            padding: 0 10px;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 5px #00ff41;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid #005500;
+            color: #00ff41;
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus {
+            border: 1px solid #00ff41;
+            box-shadow: 0 0 8px #00ff41;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            font-family: inherit;
+            font-size: 18px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #00ff41;
+            color: #050505;
+            box-shadow: 0 0 15px #00ff41;
+        }
+
+        #status-message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 20px;
+            color: #ff003c; /* Red for errors */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>[ SYSTEM_LOGIN ]</h1>
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="usr_name">> USR_NAME_</label>
+                <input type="text" id="usr_name" required autocomplete="off" placeholder="Enter ID...">
+            </div>
+            <div class="input-group">
+                <label for="passwd">> PASSWD_</label>
+                <input type="password" id="passwd" required placeholder="Enter Key...">
+            </div>
+            <button type="submit">INITIALIZE_CONNECTION</button>
+        </form>
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        // JavaScript: Handling the logic, generating GDBP_NUMBER, and database simulation
+
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            // Prevent the page from refreshing when the form is submitted
+            event.preventDefault();
+
+            // Get the values entered by the user
+            const username = document.getElementById('usr_name').value;
+            const password = document.getElementById('passwd').value;
+            const statusMsg = document.getElementById('status-message');
+
+            statusMsg.style.color = "#00ff41";
+            statusMsg.innerText = "Authenticating... Please wait.";
+
+            // Simulate a slight delay to make it feel like a real database connection
+            setTimeout(() => {
+                
+                // 1. Generate the unique GDBP_NUMBER (Using a random 6-digit hex for now)
+                // In your final project, your database (like Supabase) might generate this automatically
+                const gdbp_number = 'GDBP-' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
+
+                // 2. Here is where you will eventually put the code to INSERT into your Database
+                console.log("DATABASE ENTRY:");
+                console.log("USR_NAME: " + username);
+                console.log("PASSWD: " + password);
+                console.log("PRIMARY KEY (GDBP_NUMBER): " + gdbp_number);
+
+                // 3. Save the GDBP_NUMBER to local storage so the game page can use it
+                localStorage.setItem("currentUserGDBP", gdbp_number);
+                localStorage.setItem("currentUserName", username);
+
+                // 4. Success message and redirect to the game
+                statusMsg.innerText = `Access Granted. ID: ${gdbp_number}. Redirecting to Grid...`;
+                
+                setTimeout(() => {
+                    // Redirects the user to the game page (we will build this next)
+                    // window.location.href = "game.html"; 
+                    alert("This is where the browser redirects to game.html!");
+                }, 1500);
+
+            }, 1200);
+        });
+    </script>
+
+</body>
+</html>
